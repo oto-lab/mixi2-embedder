@@ -1,9 +1,14 @@
 ---
+import type { Post, User } from 'mixi2-js';
 import { PostMediaType } from 'mixi2-js';
 import Snippet from '~/components/Snippet.astro';
 import SnippetFallback from '~/components/SnippetFallback.astro';
-import { fetchPost, fetchUser } from '~/lib/mixi2';
-import { postUrl as buildPostUrl } from '~/lib/parse';
+import { fetchPost, fetchPosts, fetchUser, fetchUsers } from '~/lib/mixi2';
+import { fetchQuotedPostId } from '~/lib/mixi2-web';
+import {
+  postUrl as buildPostUrl,
+  extractMixi2PostRefs,
+} from '~/lib/parse';
 
 interface Props {
   postId: string | null;
@@ -14,11 +19,6 @@ const { postId } = Astro.props;
 const result = postId
   ? await fetchPost(postId)
   : ({ ok: false, reason: 'not_found' } as const);
-
-const user =
-  result.ok && result.post.creatorId
-    ? await fetchUser(result.post.creatorId)
-    : null;
 
 if (result.ok) {
   Astro.response.headers.set(
@@ -36,68 +36,143 @@ if (result.ok) {
   );
 }
 
+type RelatedContext = { post: Post; user: User | null };
+
+async function fetchRelated(id: string): Promise<RelatedContext | null> {
+  const posts = await fetchPosts([id]);
+  const p = posts.get(id);
+  if (!p) return null;
+  const users = await fetchUsers([p.creatorId]);
+  return { post: p, user: users.get(p.creatorId) ?? null };
+}
+
+// --- Parallel fetch of author, reply parent, and quote target ---------------
+let user: User | null = null;
+let replyContext: RelatedContext | null = null;
+let quoteContext: RelatedContext | null = null;
+
+if (result.ok) {
+  const post = result.post;
+
+  const userPromise = post.creatorId
+    ? fetchUser(post.creatorId)
+    : Promise.resolve(null);
+
+  const replyPromise = post.inReplyToPostId
+    ? fetchRelated(post.inReplyToPostId)
+    : Promise.resolve(null);
+
+  // Quote: try the mixi.social HTML scrape first; fall back to text URLs
+  const quoteIdPromise = (async () => {
+    const scraped = await fetchQuotedPostId(post.postId);
+    if (scraped && scraped !== post.postId) return scraped;
+    const textRef = extractMixi2PostRefs(post.text, 1).find(
+      (r) => r.id !== post.postId
+    );
+    return textRef?.id ?? null;
+  })();
+
+  const [resolvedUser, resolvedReply, quoteId] = await Promise.all([
+    userPromise,
+    replyPromise,
+    quoteIdPromise,
+  ]);
+  user = resolvedUser;
+  replyContext = resolvedReply;
+
+  if (quoteId) {
+    quoteContext = await fetchRelated(quoteId);
+  }
+}
+
 // --- OGP / Twitter Card metadata for Discord/Slack/X/Telegram previews -----
 const ogSiteName = 'mixi2';
 const ogThemeColor = '#ff5a36';
 let ogTitle = 'mixi2 post';
 let ogDescription = '';
-let ogImage: string | null = null;
-let ogImageWidth: number | null = null;
-let ogImageHeight: number | null = null;
 let ogCanonical = postId
   ? `https://mixi.social/posts/${postId}`
   : 'https://mixi.social/';
+
+type OgImage = {
+  url: string;
+  width: number | null;
+  height: number | null;
+};
+const ogImages: OgImage[] = [];
+
 let ogVideoUrl: string | null = null;
 let ogVideoMime: string | null = null;
 let ogVideoWidth: number | null = null;
 let ogVideoHeight: number | null = null;
+
+function handleOf(u: User | null): string {
+  return u?.name ? `@${u.name}` : '@user';
+}
+
+function snippetOf(text: string, max = 100): string {
+  const t = text.trim().replace(/\s+/g, ' ');
+  return t.length > max ? t.slice(0, max) + '…' : t;
+}
 
 if (result.ok) {
   const post = result.post;
   const displayName = user?.displayName || user?.name || 'mixi2 user';
   const handle = user?.name ? ` (@${user.name})` : '';
   ogTitle = `${displayName}${handle} on mixi2`;
-  ogDescription = post.text.trim();
   ogCanonical = buildPostUrl(post.postId, user?.name);
 
-  const firstImageMedia = post.postMediaList.find(
-    (m) => m.mediaType === PostMediaType.IMAGE && m.image
-  );
-  const firstVideoMedia = post.postMediaList.find(
-    (m) => m.mediaType === PostMediaType.VIDEO && m.video
-  );
+  // --- Description: fxtwitter-style context lines --------------------------
+  const descLines: string[] = [];
+  const mainText = post.text.trim();
+  if (mainText) descLines.push(mainText);
 
-  if (firstImageMedia?.image) {
-    const img = firstImageMedia.image;
-    ogImage = img.largeImageUrl || img.smallImageUrl;
-    ogImageWidth = img.largeImageWidth || img.smallImageWidth || null;
-    ogImageHeight = img.largeImageHeight || img.smallImageHeight || null;
-  } else if (firstVideoMedia?.video) {
-    const v = firstVideoMedia.video;
-    ogImage = v.previewImageUrl;
-    ogImageWidth = v.previewImageWidth || null;
-    ogImageHeight = v.previewImageHeight || null;
-    if (v.videoUrl) {
-      ogVideoUrl = v.videoUrl;
-      ogVideoMime = v.videoMimeType || 'video/mp4';
-      ogVideoWidth = v.videoWidth || null;
-      ogVideoHeight = v.videoHeight || null;
+  if (replyContext) {
+    const h = handleOf(replyContext.user);
+    const s = snippetOf(replyContext.post.text);
+    descLines.push('');
+    descLines.push(s ? `↩ Replying to ${h}: ${s}` : `↩ Replying to ${h}`);
+  }
+  if (quoteContext) {
+    const h = handleOf(quoteContext.user);
+    const s = snippetOf(quoteContext.post.text);
+    descLines.push('');
+    descLines.push(s ? `💬 Quoting ${h}: ${s}` : `💬 Quoting ${h}`);
+  }
+  ogDescription = descLines.join('\n');
+
+  // --- Images: collect ALL media (up to 4); Discord shows them as a grid ---
+  for (const m of post.postMediaList.slice(0, 4)) {
+    if (m.mediaType === PostMediaType.IMAGE && m.image) {
+      ogImages.push({
+        url: m.image.largeImageUrl || m.image.smallImageUrl,
+        width: m.image.largeImageWidth || m.image.smallImageWidth || null,
+        height: m.image.largeImageHeight || m.image.smallImageHeight || null,
+      });
+    } else if (m.mediaType === PostMediaType.VIDEO && m.video) {
+      ogImages.push({
+        url: m.video.previewImageUrl,
+        width: m.video.previewImageWidth || null,
+        height: m.video.previewImageHeight || null,
+      });
+      if (!ogVideoUrl && m.video.videoUrl) {
+        ogVideoUrl = m.video.videoUrl;
+        ogVideoMime = m.video.videoMimeType || 'video/mp4';
+        ogVideoWidth = m.video.videoWidth || null;
+        ogVideoHeight = m.video.videoHeight || null;
+      }
     }
-  } else if (user?.userAvatar?.largeImageUrl) {
-    const av = user.userAvatar;
-    ogImage = av.largeImageUrl;
-    ogImageWidth = av.largeImageWidth || null;
-    ogImageHeight = av.largeImageHeight || null;
   }
 }
 
 const ogTitleClamped =
   ogTitle.length > 70 ? ogTitle.slice(0, 70) + '…' : ogTitle;
 const ogDescriptionClamped =
-  ogDescription.length > 280
-    ? ogDescription.slice(0, 280) + '…'
+  ogDescription.length > 320
+    ? ogDescription.slice(0, 320) + '…'
     : ogDescription;
-const twitterCard = ogImage ? 'summary_large_image' : 'summary';
+const twitterCard = ogImages.length > 0 ? 'summary_large_image' : 'summary';
+const primaryImage = ogImages[0] ?? null;
 ---
 
 <!doctype html>
@@ -123,16 +198,18 @@ const twitterCard = ogImage ? 'summary_large_image' : 'summary';
       )
     }
     <meta property="og:url" content={ogCanonical} />
-    {ogImage && <meta property="og:image" content={ogImage} />}
     {
-      ogImage && ogImageWidth && (
-        <meta property="og:image:width" content={String(ogImageWidth)} />
-      )
-    }
-    {
-      ogImage && ogImageHeight && (
-        <meta property="og:image:height" content={String(ogImageHeight)} />
-      )
+      ogImages.map((img) => (
+        <Fragment>
+          <meta property="og:image" content={img.url} />
+          {img.width && (
+            <meta property="og:image:width" content={String(img.width)} />
+          )}
+          {img.height && (
+            <meta property="og:image:height" content={String(img.height)} />
+          )}
+        </Fragment>
+      ))
     }
     {
       ogVideoUrl && (
@@ -160,7 +237,7 @@ const twitterCard = ogImage ? 'summary_large_image' : 'summary';
         <meta name="twitter:description" content={ogDescriptionClamped} />
       )
     }
-    {ogImage && <meta name="twitter:image" content={ogImage} />}
+    {primaryImage && <meta name="twitter:image" content={primaryImage.url} />}
     {user?.name && <meta name="twitter:creator" content={`@${user.name}`} />}
 
     <meta name="theme-color" content={ogThemeColor} />
