@@ -7,7 +7,7 @@
   } from '~/lib/parse';
 
   type Format = 'html' | 'mdx';
-  type CopiedKey = 'snippet' | 'script' | 'share' | 'builder' | null;
+  type CopiedKey = 'snippet' | 'script' | 'share' | 'host' | null;
 
   let origin = $state('');
   let input = $state('');
@@ -217,27 +217,15 @@
 
         <div class="panel-head sub">
           <h3>シェア用 URL (Discord / X / Slack 等)</h3>
-        </div>
-        <div class="url-row">
-          <code class="oneline">{shareUrl}</code>
           <button
             class="copy"
             type="button"
             onclick={() => copy(shareUrl, 'share')}
           >
-            {copied === 'share' ? 'コピーしました' : '?なし'}
+            {copied === 'share' ? 'コピーしました' : 'コピー'}
           </button>
         </div>
-        <div class="url-row">
-          <code class="oneline">{builderUrl}</code>
-          <button
-            class="copy"
-            type="button"
-            onclick={() => copy(builderUrl, 'builder')}
-          >
-            {copied === 'builder' ? 'コピーしました' : '?あり'}
-          </button>
-        </div>
+        <code class="oneline">{shareUrl}</code>
 
         <div class="panel-head sub">
           <h3>埋め込みスクリプト URL</h3>
@@ -256,6 +244,20 @@
           URL を Discord 等に貼ると OGP プレビューが展開されます。
         </p>
       </div>
+    </div>
+  {/if}
+
+  {#if origin}
+    <div class="host-row">
+      <span class="host-label">このツールをシェア</span>
+      <code class="oneline host-url">{origin}</code>
+      <button
+        class="copy"
+        type="button"
+        onclick={() => copy(origin, 'host')}
+      >
+        {copied === 'host' ? 'コピーしました' : 'コピー'}
+      </button>
     </div>
   {/if}
 </section>
@@ -468,12 +470,19 @@
     white-space: pre-wrap;
     word-break: break-all;
   }
-  .url-row {
+  .host-row {
     display: flex;
     align-items: center;
     gap: 8px;
+    flex-wrap: wrap;
   }
-  .url-row .oneline {
+  .host-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--fg-muted);
+    white-space: nowrap;
+  }
+  .host-url {
     flex: 1;
     min-width: 0;
   }
