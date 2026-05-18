@@ -13,21 +13,32 @@
   let input = $state('');
   let iframeHeight = $state(0);
   let format = $state<Format>('html');
+  let includeUser = $state(true);
   let copied = $state<CopiedKey>(null);
   let copyTimer: ReturnType<typeof setTimeout> | null = null;
 
   const postId = $derived(parsePostId(input));
   const handle = $derived(extractHandleFromInput(input));
+  const effectiveHandle = $derived(includeUser ? handle : null);
+
+  // mixi.social URL used inside the <blockquote> fallback link
+  const mixi2PostUrl = $derived(
+    postId
+      ? effectiveHandle
+        ? `https://mixi.social/@${effectiveHandle}/posts/${postId}`
+        : `https://mixi.social/posts/${postId}`
+      : ''
+  );
 
   const blockquoteHtml = $derived(
     postId
-      ? `<blockquote class="mixi2-embedder-embed" data-mixi2-embedder-post-id="${postId}"><a href="https://mixi.social/posts/${postId}">View on mixi2</a></blockquote>\n<script async src="${origin}/embed.js" charset="utf-8"><\/script>`
+      ? `<blockquote class="mixi2-embedder-embed" data-mixi2-embedder-post-id="${postId}"><a href="${mixi2PostUrl}">View on mixi2</a></blockquote>\n<script async src="${origin}/embed.js" charset="utf-8"><\/script>`
       : ''
   );
 
   const mdxHtml = $derived(
     postId
-      ? `<div set:html={\`<blockquote class="mixi2-embedder-embed" data-mixi2-embedder-post-id="${postId}"><a href="https://mixi.social/posts/${postId}">View on mixi2</a></blockquote><script async src="${origin}/embed.js" charset="utf-8"><\/script>\`} />`
+      ? `<div set:html={\`<blockquote class="mixi2-embedder-embed" data-mixi2-embedder-post-id="${postId}"><a href="${mixi2PostUrl}">View on mixi2</a></blockquote><script async src="${origin}/embed.js" charset="utf-8"><\/script>\`} />`
       : ''
   );
 
@@ -38,7 +49,7 @@
   );
   const scriptUrl = $derived(origin ? `${origin}/embed.js` : '');
   const shareUrl = $derived(
-    postId && origin ? buildShareUrl(origin, postId, handle) : ''
+    postId && origin ? buildShareUrl(origin, postId, effectiveHandle) : ''
   );
 
   onMount(() => {
@@ -166,6 +177,19 @@
             </button>
           </div>
         </div>
+        <label class="user-toggle" title={handle ? '' : 'URL にユーザー名が含まれていません'}>
+          <input
+            type="checkbox"
+            bind:checked={includeUser}
+            disabled={!handle}
+          />
+          <span>
+            URL に <code>@{handle ?? 'user'}</code> を含める
+            {#if !handle}
+              <span class="user-toggle-hint">(URL から取得できません)</span>
+            {/if}
+          </span>
+        </label>
         <pre class="snippet"><code>{embedCode}</code></pre>
 
         <div class="panel-head sub">
@@ -342,6 +366,44 @@
   .copy:hover {
     border-color: var(--accent);
     color: var(--accent);
+  }
+  .user-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    margin: -2px 0 0;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-alt);
+    font-size: 12.5px;
+    color: var(--fg);
+    cursor: pointer;
+    align-self: flex-start;
+    user-select: none;
+  }
+  .user-toggle:has(input:disabled) {
+    cursor: not-allowed;
+    color: var(--fg-muted);
+    opacity: 0.7;
+  }
+  .user-toggle input[type='checkbox'] {
+    accent-color: var(--accent);
+    margin: 0;
+    width: 14px;
+    height: 14px;
+  }
+  .user-toggle code {
+    background: var(--code-bg);
+    color: var(--code-fg);
+    padding: 1px 6px;
+    border-radius: 6px;
+    font-size: 11.5px;
+  }
+  .user-toggle-hint {
+    color: var(--fg-muted);
+    font-size: 11.5px;
+    margin-left: 4px;
   }
   .preview {
     min-height: var(--ph);
