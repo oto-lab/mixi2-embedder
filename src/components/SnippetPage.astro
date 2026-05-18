@@ -5,10 +5,7 @@ import Snippet from '~/components/Snippet.astro';
 import SnippetFallback from '~/components/SnippetFallback.astro';
 import { fetchPost, fetchPosts, fetchUser, fetchUsers } from '~/lib/mixi2';
 import { fetchQuotedPostId } from '~/lib/mixi2-web';
-import {
-  postUrl as buildPostUrl,
-  extractMixi2PostRefs,
-} from '~/lib/parse';
+import { postUrl as buildPostUrl, extractMixi2PostRefs } from '~/lib/parse';
 
 interface Props {
   postId: string | null;
@@ -251,13 +248,8 @@ const primaryImage = ogImages[0] ?? null;
       }
       body {
         font-family:
-          -apple-system,
-          BlinkMacSystemFont,
-          'Hiragino Sans',
-          'Yu Gothic UI',
-          'Segoe UI',
-          Roboto,
-          sans-serif;
+          -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI',
+          'Segoe UI', Roboto, sans-serif;
       }
       #root {
         padding: 0;
