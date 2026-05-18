@@ -6,7 +6,14 @@ import { extractUrls } from '~/lib/ogp';
 
 export const prerender = false;
 
+// Dev-only endpoint. `import.meta.env.PROD` is replaced at build time, so the
+// body below is dead-code-eliminated in production bundles and the Vercel
+// function returns a static 404.
 export const GET: APIRoute = async ({ params }) => {
+  if (import.meta.env.PROD) {
+    return new Response('Not found', { status: 404 });
+  }
+
   const rawId = params['id'] ?? '';
   const postId = parsePostId(rawId);
   if (!postId) {
