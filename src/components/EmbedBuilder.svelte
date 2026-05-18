@@ -438,11 +438,12 @@
     margin-left: 4px;
   }
   .preview {
-    min-height: var(--ph);
+    height: var(--ph);
     display: block;
     border-radius: 12px;
     background: var(--surface-alt);
     padding: 0;
+    overflow: hidden;
   }
   .preview iframe {
     width: 100%;

@@ -291,10 +291,11 @@ const primaryImage = ogImages[0] ?? null;
     <script is:inline>
       (function () {
         function postHeight() {
-          var h = document.documentElement.scrollHeight;
+          var root = document.getElementById('root');
+          var h = root ? root.getBoundingClientRect().height : document.documentElement.scrollHeight;
           try {
             window.parent.postMessage(
-              { type: 'mixi2-embedder-snippet-height', height: h },
+              { type: 'mixi2-embedder-snippet-height', height: Math.ceil(h) },
               '*'
             );
           } catch (_) {}
@@ -304,7 +305,7 @@ const primaryImage = ogImages[0] ?? null;
           window.addEventListener('load', postHeight, { once: true });
         }
         if (typeof ResizeObserver !== 'undefined') {
-          new ResizeObserver(postHeight).observe(document.documentElement);
+          new ResizeObserver(postHeight).observe(document.getElementById('root') || document.documentElement);
         } else {
           window.addEventListener('resize', postHeight);
         }
