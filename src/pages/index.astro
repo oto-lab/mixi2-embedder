@@ -5,9 +5,7 @@ export const prerender = false;
 
 Astro.response.headers.set('Content-Type', 'text/html; charset=utf-8');
 
-const origin = Astro.url.origin;
-const exampleScript = `<script async src="${origin}/embed.js" charset="utf-8"></script>`;
-const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-embedder-post-id="POST_UUID"><a href="https://mixi.social/posts/POST_UUID">View on mixi2</a></blockquote>`;
+
 ---
 
 <!doctype html>
@@ -15,7 +13,7 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>mixi2 embedder — ブログに mixi2 のポストを埋め込む</title>
+    <title>mixi2 embedder — Webページにポストを埋め込む</title>
     <meta
       name="description"
       content="mixi2 のポスト URL を貼り付けるだけで、ブログや HTML に埋め込めるスニペットを生成します。"
@@ -81,8 +79,7 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
           </a>
         </h1>
         <p>
-          mixi2 のポスト URL を貼り付けて、ブログや HTML
-          に埋め込めるスニペットを生成します。
+          mixi2 のポスト URL を貼り付けて、埋め込みスニペットを生成します。
         </p>
       </header>
 
@@ -92,32 +89,14 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
         <h2>使い方</h2>
         <ol>
           <li>埋め込みたいポストの URL を上の入力欄に貼り付けます。</li>
-          <li>右側に表示されたスニペットをコピーします。</li>
-          <li>コピーしたコードをブログや Web ページの HTML に貼り付けます。</li>
+          <li>プレビューを確認し、スニペットをコピーします。</li>
+          <li>コピーしたコードを任意の Web ページの HTML に貼り付けます。</li>
         </ol>
-
-        <h3>埋め込みコードの仕組み</h3>
-        <p>埋め込みコードは以下の 2 つのパートからできています。</p>
-        <pre><code>{exampleBlockquote}
-{exampleScript}</code></pre>
-        <ul>
-          <li>
-            <strong>blockquote</strong>: ページに <code
-              >data-mixi2-embedder-post-id</code
-            > 属性付きで配置されます。 JS が無効な環境ではポストへのリンクとして機能します。
-          </li>
-          <li>
-            <strong>script</strong>: ページ内の blockquote を検出し、自動で
-            iframe (このサイトの
-            <code>/snippets/[id]</code>) に置き換えます。
-          </li>
-        </ul>
 
         <h3>セルフホスト / フォーク</h3>
         <p>
           このプロジェクトはオープンソースです。Vercel
-          にフォークデプロイすれば、 独自ドメインで自分の embedder
-          を運用できます。
+          にフォークデプロイすれば、独自ドメインで運用できます。
         </p>
         <p class="repo">
           GitHub:
