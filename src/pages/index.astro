@@ -68,15 +68,17 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
     <main class="page">
       <header class="hero">
         <h1>
-          <span class="mark" aria-hidden="true">
-            <svg viewBox="0 0 64 64" width="38" height="38">
-              <rect width="64" height="64" rx="14" fill="#ff5a36"></rect>
-              <path
-                d="M16 44V20h6l8 12 8-12h6v24h-6V30l-8 12-8-12v14z"
-                fill="#fff"></path>
-            </svg>
-          </span>
-          mixi2 embedder
+          <a class="title-link" href="/">
+            <span class="mark" aria-hidden="true">
+              <svg viewBox="0 0 64 64" width="38" height="38">
+                <rect width="64" height="64" rx="14" fill="#ff5a36"></rect>
+                <path
+                  d="M16 44V20h6l8 12 8-12h6v24h-6V30l-8 12-8-12v14z"
+                  fill="#fff"></path>
+              </svg>
+            </span>
+            mixi2 embedder
+          </a>
         </h1>
         <p>
           mixi2 のポスト URL を貼り付けて、ブログや HTML
@@ -164,12 +166,19 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
         gap: 36px;
       }
       .hero h1 {
-        display: flex;
-        align-items: center;
-        gap: 12px;
         margin: 0 0 8px;
         font-size: 28px;
         letter-spacing: -0.01em;
+      }
+      .title-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        color: inherit;
+        text-decoration: none;
+      }
+      .title-link:hover {
+        opacity: 0.8;
       }
       .hero .mark {
         display: inline-flex;
