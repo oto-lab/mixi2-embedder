@@ -1,0 +1,99 @@
+---
+export const prerender = true;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>404 — mixi2 embedder</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      :root {
+        --bg: #f7f7f8;
+        --surface: #ffffff;
+        --border: #e4e6ea;
+        --fg: #16181c;
+        --fg-muted: #6b6f76;
+        --accent: #ff5a36;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d0e10;
+          --surface: #16181c;
+          --border: #2a2d31;
+          --fg: #f1f3f5;
+          --fg-muted: #9aa1a9;
+          --accent: #ff7a5a;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI',
+          'Segoe UI', Roboto, sans-serif;
+      }
+      .page {
+        min-height: 100svh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 20px;
+        padding: 40px 20px;
+        text-align: center;
+      }
+      .code {
+        font-size: 72px;
+        font-weight: 800;
+        letter-spacing: -0.04em;
+        color: var(--accent);
+        margin: 0;
+        line-height: 1;
+      }
+      .message {
+        font-size: 18px;
+        font-weight: 600;
+        margin: 0;
+        color: var(--fg);
+      }
+      .sub {
+        margin: 0;
+        font-size: 14px;
+        color: var(--fg-muted);
+      }
+      .back {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 8px;
+        padding: 10px 22px;
+        background: var(--accent);
+        color: #fff;
+        border-radius: 999px;
+        font-size: 14px;
+        font-weight: 700;
+        text-decoration: none;
+      }
+      .back:hover {
+        opacity: 0.88;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <p class="code">404</p>
+      <p class="message">ページが見つかりません</p>
+      <p class="sub">URL を確認するか、トップページからやり直してください。</p>
+      <a class="back" href="/">トップへ戻る</a>
+    </div>
+  </body>
+</html>
