@@ -73,7 +73,7 @@ export function extractHandleFromInput(input: string): string | null {
 
 /**
  * Build a share-friendly URL on the embedder's own origin.
- * Discord / X / Slack will fetch this URL and read its OGP meta tags.
+ * Discord / Twitter / Slack will fetch this URL and read its OGP meta tags.
  *
  *   buildShareUrl(origin, id, "rin_montblank")
  *   → "{origin}/@rin_montblank/posts/{id}"

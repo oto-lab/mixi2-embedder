@@ -212,7 +212,7 @@
         <pre class="snippet"><code>{embedCode}</code></pre>
 
         <div class="panel-head sub">
-          <h3>シェア用 URL (Discord / X / Slack 等)</h3>
+          <h3>シェア用 URL (Discord / Twitter / Slack 等)</h3>
           <button
             class="copy"
             type="button"
