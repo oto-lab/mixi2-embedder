@@ -1,0 +1,248 @@
+---
+import EmbedBuilder from '~/components/EmbedBuilder.svelte';
+
+export const prerender = false;
+
+const origin = Astro.url.origin;
+const exampleScript = `<script async src="${origin}/embed.js" charset="utf-8"></script>`;
+const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-embedder-post-id="POST_UUID"><a href="https://mixi.social/posts/POST_UUID">View on mixi2</a></blockquote>`;
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>mixi2 embedder — ブログに mixi2 のポストを埋め込む</title>
+    <meta
+      name="description"
+      content="mixi2 のポスト URL を貼り付けるだけで、ブログや HTML に埋め込めるスニペットを生成します。"
+    />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style is:global>
+      :root {
+        --bg: #f7f7f8;
+        --surface: #ffffff;
+        --surface-alt: #f0f1f3;
+        --border: #e4e6ea;
+        --fg: #16181c;
+        --fg-muted: #6b6f76;
+        --accent: #ff5a36;
+        --code-bg: #0f1115;
+        --code-fg: #e9ecef;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0d0e10;
+          --surface: #16181c;
+          --surface-alt: #1c1f23;
+          --border: #2a2d31;
+          --fg: #f1f3f5;
+          --fg-muted: #9aa1a9;
+          --accent: #ff7a5a;
+          --code-bg: #0a0b0d;
+          --code-fg: #e9ecef;
+        }
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI',
+          'Segoe UI', Roboto, sans-serif;
+      }
+      a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main class="page">
+      <header class="hero">
+        <h1>
+          <span class="mark" aria-hidden="true">
+            <svg viewBox="0 0 64 64" width="38" height="38">
+              <rect width="64" height="64" rx="14" fill="#ff5a36"></rect>
+              <path
+                d="M16 44V20h6l8 12 8-12h6v24h-6V30l-8 12-8-12v14z"
+                fill="#fff"></path>
+            </svg>
+          </span>
+          mixi2 embedder
+        </h1>
+        <p>
+          mixi2 のポスト URL を貼り付けて、ブログや HTML
+          に埋め込めるスニペットを生成します。
+        </p>
+      </header>
+
+      <EmbedBuilder client:load />
+
+      <section class="docs">
+        <h2>使い方</h2>
+        <ol>
+          <li>埋め込みたいポストの URL を上の入力欄に貼り付けます。</li>
+          <li>右側に表示されたスニペットをコピーします。</li>
+          <li>コピーしたコードをブログや Web ページの HTML に貼り付けます。</li>
+        </ol>
+
+        <h3>埋め込みコードの仕組み</h3>
+        <p>埋め込みコードは以下の 2 つのパートからできています。</p>
+        <pre><code>{exampleBlockquote}
+{exampleScript}</code></pre>
+        <ul>
+          <li>
+            <strong>blockquote</strong>: ページに <code
+              >data-mixi2-embedder-post-id</code
+            > 属性付きで配置されます。 JS が無効な環境ではポストへのリンクとして機能します。
+          </li>
+          <li>
+            <strong>script</strong>: ページ内の blockquote を検出し、自動で
+            iframe (このサイトの
+            <code>/snippets/[id]</code>) に置き換えます。
+          </li>
+        </ul>
+
+        <h3>セルフホスト / フォーク</h3>
+        <p>
+          このプロジェクトはオープンソースです。Vercel
+          にフォークデプロイすれば、 独自ドメインで自分の embedder
+          を運用できます。
+        </p>
+        <p class="repo">
+          GitHub:
+          <a
+            href="https://github.com/oto-lab/mixi2-embedder"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            github.com/oto-lab/mixi2-embedder
+          </a>
+        </p>
+      </section>
+
+      <footer class="foot">
+        <p>
+          Powered by
+          <a
+            href="https://github.com/otnc/mixi2-js"
+            target="_blank"
+            rel="noopener"
+          >
+            mixi2-js
+          </a>
+          ·
+          <a
+            href="https://developer.mixi.social/"
+            target="_blank"
+            rel="noopener"
+          >
+            mixi2 Developer Platform
+          </a>
+        </p>
+        <p class="disclaimer">
+          このサイトは MIXI 社が公式に運営するものではありません。
+        </p>
+      </footer>
+    </main>
+
+    <style>
+      .page {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 48px 20px 80px;
+        display: flex;
+        flex-direction: column;
+        gap: 36px;
+      }
+      .hero h1 {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin: 0 0 8px;
+        font-size: 28px;
+        letter-spacing: -0.01em;
+      }
+      .hero .mark {
+        display: inline-flex;
+      }
+      .hero p {
+        margin: 0;
+        color: var(--fg-muted);
+        font-size: 15px;
+        line-height: 1.55;
+      }
+      .docs {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 22px 22px 26px;
+        color: var(--fg);
+      }
+      .docs h2 {
+        margin: 0 0 12px;
+        font-size: 18px;
+      }
+      .docs h3 {
+        margin: 22px 0 8px;
+        font-size: 15px;
+      }
+      .docs ol,
+      .docs ul {
+        margin: 0;
+        padding-left: 1.25em;
+        line-height: 1.7;
+        color: var(--fg);
+      }
+      .docs p {
+        margin: 8px 0 12px;
+        line-height: 1.65;
+        color: var(--fg);
+      }
+      .docs code {
+        background: var(--surface-alt);
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-size: 0.92em;
+      }
+      .docs pre {
+        background: var(--code-bg);
+        color: var(--code-fg);
+        padding: 12px 14px;
+        border-radius: 12px;
+        overflow-x: auto;
+        font-size: 12.5px;
+        line-height: 1.55;
+      }
+      .docs pre code {
+        background: transparent;
+        padding: 0;
+      }
+      .foot {
+        text-align: center;
+        color: var(--fg-muted);
+        font-size: 13px;
+      }
+      .foot p {
+        margin: 4px 0;
+      }
+      .foot a {
+        color: var(--fg-muted);
+        text-decoration: underline;
+      }
+      .foot a:hover {
+        color: var(--accent);
+      }
+      .disclaimer {
+        font-size: 12px;
+        opacity: 0.8;
+      }
+    </style>
+  </body>
+</html>

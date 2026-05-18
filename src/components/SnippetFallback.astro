@@ -1,0 +1,80 @@
+---
+import { postUrl as buildPostUrl } from '~/lib/parse';
+
+interface Props {
+  postId: string;
+  reason: 'not_found' | 'deleted' | 'error';
+  message?: string | undefined;
+}
+
+const { postId, reason, message } = Astro.props;
+const linkHref = buildPostUrl(postId);
+
+const label =
+  reason === 'not_found'
+    ? 'ポストが見つかりませんでした'
+    : reason === 'deleted'
+      ? 'このポストは削除されました'
+      : 'ポストを読み込めませんでした';
+---
+
+<article class="card">
+  <p class="label">{label}</p>
+  {message && <p class="detail">{message}</p>}
+  <a class="link" href={linkHref} target="_blank" rel="noopener noreferrer">
+    mixi2 で開く →
+  </a>
+</article>
+
+<style>
+  .card {
+    --color-fg: #1a1a1a;
+    --color-fg-muted: #6b6f76;
+    --color-border: #e6e8eb;
+    --color-bg: #ffffff;
+    --color-accent: #ff5a36;
+
+    display: block;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    border: 1px solid var(--color-border);
+    border-radius: 24px;
+    padding: 20px 18px;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI',
+      'Segoe UI', Roboto, sans-serif;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 550px;
+    text-align: center;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card {
+      --color-fg: #f1f3f5;
+      --color-fg-muted: #9aa1a9;
+      --color-border: #2a2d31;
+      --color-bg: #15171a;
+    }
+  }
+  .label {
+    margin: 0;
+    font-weight: 600;
+    color: var(--color-fg);
+  }
+  .detail {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: var(--color-fg-muted);
+    word-break: break-word;
+  }
+  .link {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--color-accent);
+    text-decoration: none;
+    font-weight: 600;
+  }
+  .link:hover {
+    text-decoration: underline;
+  }
+</style>

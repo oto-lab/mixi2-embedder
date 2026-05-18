@@ -1,0 +1,151 @@
+---
+import type { OgpData } from '~/lib/ogp';
+
+interface Props {
+  data: OgpData;
+}
+
+const { data } = Astro.props;
+const site = data.siteName ?? data.hostname;
+---
+
+<a class="ogp" href={data.url} target="_blank" rel="noopener noreferrer ugc">
+  {
+    data.image && (
+      <div class="thumb" aria-hidden="true">
+        <img
+          src={data.image}
+          alt=""
+          loading="lazy"
+          decoding="async"
+          referrerpolicy="no-referrer"
+        />
+      </div>
+    )
+  }
+  <div class="meta">
+    {data.title && <p class="title">{data.title}</p>}
+    {data.description && <p class="desc">{data.description}</p>}
+    <p class="site">
+      <span class="site-name">{site}</span>
+      {
+        site !== data.hostname && (
+          <>
+            <span class="dot">·</span>
+            <span class="host">{data.hostname}</span>
+          </>
+        )
+      }
+    </p>
+  </div>
+</a>
+
+<style>
+  .ogp {
+    display: flex;
+    align-items: stretch;
+    gap: 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+    background: var(--color-bg);
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+    min-height: 96px;
+  }
+  .ogp:hover {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 4%, var(--color-bg));
+  }
+
+  .thumb {
+    flex: 0 0 auto;
+    width: 96px;
+    background: var(--color-border);
+    overflow: hidden;
+  }
+  .thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .meta {
+    flex: 1 1 auto;
+    min-width: 0;
+    padding: 10px 12px 10px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    justify-content: center;
+  }
+  .ogp :global(.thumb) + .meta {
+    padding-left: 0;
+  }
+  .ogp:not(:has(.thumb)) .meta {
+    padding-left: 12px;
+  }
+
+  .title {
+    margin: 0;
+    font-size: 13.5px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--color-fg);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .desc {
+    margin: 0;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: var(--color-fg-muted);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    word-break: break-word;
+  }
+  .site {
+    margin: 2px 0 0;
+    font-size: 11.5px;
+    color: var(--color-fg-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .site-name,
+  .host {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+  }
+  .dot {
+    opacity: 0.6;
+  }
+
+  @media (max-width: 380px) {
+    .thumb {
+      width: 72px;
+    }
+    .title {
+      font-size: 13px;
+    }
+    .desc {
+      -webkit-line-clamp: 1;
+      line-clamp: 1;
+    }
+  }
+</style>

@@ -1,0 +1,132 @@
+---
+import type { PostMedia } from 'mixi2-js';
+import { PostMediaType } from 'mixi2-js';
+
+interface Props {
+  mediaList: PostMedia[];
+  postUrl: string;
+}
+
+const { mediaList, postUrl } = Astro.props;
+const items = mediaList.slice(0, 4);
+const layoutClass =
+  items.length === 1
+    ? 'layout-1'
+    : items.length === 2
+      ? 'layout-2'
+      : items.length === 3
+        ? 'layout-3'
+        : 'layout-4';
+---
+
+{
+  items.length > 0 && (
+    <div class={`media-grid ${layoutClass}`}>
+      {items.map((media) => {
+        if (media.mediaType === PostMediaType.IMAGE && media.image) {
+          return (
+            <a
+              class="media-cell"
+              href={postUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <img
+                src={media.image.smallImageUrl || media.image.largeImageUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                width={media.image.smallImageWidth}
+                height={media.image.smallImageHeight}
+              />
+            </a>
+          );
+        }
+        if (media.mediaType === PostMediaType.VIDEO && media.video) {
+          return (
+            <a
+              class="media-cell media-video"
+              href={postUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="動画を mixi2 で再生"
+            >
+              <img
+                src={media.video.previewImageUrl}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                width={media.video.previewImageWidth}
+                height={media.video.previewImageHeight}
+              />
+              <span class="play-badge" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="48" height="48">
+                  <circle cx="12" cy="12" r="12" fill="rgba(0,0,0,0.55)" />
+                  <path d="M9 7.5v9l8-4.5z" fill="#fff" />
+                </svg>
+              </span>
+            </a>
+          );
+        }
+        return null;
+      })}
+    </div>
+  )
+}
+
+<style>
+  .media-grid {
+    display: grid;
+    gap: 2px;
+    margin-top: 12px;
+    border-radius: 16px;
+    overflow: hidden;
+    background: var(--color-border);
+  }
+  .layout-1 {
+    grid-template-columns: 1fr;
+  }
+  .layout-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+  .layout-3 {
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .layout-3 .media-cell:first-child {
+    grid-row: 1 / span 2;
+  }
+  .layout-4 {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+  }
+  .media-cell {
+    position: relative;
+    display: block;
+    background: var(--color-border);
+    aspect-ratio: 16 / 10;
+    overflow: hidden;
+  }
+  .layout-1 .media-cell {
+    aspect-ratio: auto;
+    max-height: 420px;
+  }
+  .media-cell img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .layout-1 .media-cell img {
+    object-fit: contain;
+    background: #000;
+  }
+  .play-badge {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+  }
+</style>

@@ -1,0 +1,218 @@
+---
+import type { Post, User } from 'mixi2-js';
+import { PostMediaType } from 'mixi2-js';
+import { postUrl as buildPostUrl } from '~/lib/parse';
+import { formatTimestamp, isoTimestamp } from '~/lib/text';
+
+interface Props {
+  post: Post;
+  user: User | null;
+}
+
+const { post, user } = Astro.props;
+const displayName = user?.displayName || user?.name || 'mixi2 user';
+const handle = user?.name ? `@${user.name}` : '';
+const avatarUrl = user?.userAvatar?.smallImageUrl ?? null;
+const linkHref = buildPostUrl(post.postId, user?.name);
+
+const firstMedia = post.postMediaList[0];
+const thumbUrl =
+  firstMedia?.mediaType === PostMediaType.IMAGE
+    ? (firstMedia.image?.smallImageUrl ??
+      firstMedia.image?.largeImageUrl ??
+      null)
+    : firstMedia?.mediaType === PostMediaType.VIDEO
+      ? (firstMedia.video?.previewImageUrl ?? null)
+      : null;
+const isVideo = firstMedia?.mediaType === PostMediaType.VIDEO;
+const remainingMediaCount = Math.max(0, post.postMediaList.length - 1);
+---
+
+<a class="quoted" href={linkHref} target="_blank" rel="noopener noreferrer">
+  <header class="q-head">
+    <span class="q-avatar" aria-hidden="true">
+      {
+        avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            width={user?.userAvatar?.smallImageWidth ?? 24}
+            height={user?.userAvatar?.smallImageHeight ?? 24}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span class="q-avatar-placeholder">{displayName.slice(0, 1)}</span>
+        )
+      }
+    </span>
+    <span class="q-name">
+      <span class="q-display-name">{displayName}</span>
+      {handle && <span class="q-handle">{handle}</span>}
+    </span>
+    {
+      post.createdAt && (
+        <time class="q-time" datetime={isoTimestamp(post.createdAt)}>
+          {formatTimestamp(post.createdAt)}
+        </time>
+      )
+    }
+  </header>
+
+  <div class="q-body">
+    <p class="q-text">{post.text}</p>
+    {
+      thumbUrl && (
+        <span class="q-thumb">
+          <img
+            src={thumbUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            referrerpolicy="no-referrer"
+          />
+          {isVideo && (
+            <span class="q-play" aria-hidden="true">
+              ▶
+            </span>
+          )}
+          {remainingMediaCount > 0 && (
+            <span class="q-more">+{remainingMediaCount}</span>
+          )}
+        </span>
+      )
+    }
+  </div>
+</a>
+
+<style>
+  .quoted {
+    display: block;
+    text-decoration: none;
+    color: inherit;
+    border: 1px solid var(--color-border);
+    border-radius: 14px;
+    padding: 10px 12px;
+    background: var(--color-bg);
+    transition:
+      border-color 0.15s,
+      background 0.15s;
+  }
+  .quoted:hover {
+    border-color: var(--color-accent);
+    background: color-mix(in srgb, var(--color-accent) 4%, var(--color-bg));
+  }
+  .q-head {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 0;
+  }
+  .q-avatar {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--color-border);
+    display: inline-flex;
+  }
+  .q-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .q-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    color: var(--color-fg-muted);
+    font-weight: 700;
+  }
+  .q-name {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .q-display-name {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--color-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .q-handle {
+    font-size: 12.5px;
+    color: var(--color-fg-muted);
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .q-time {
+    flex: 0 0 auto;
+    font-size: 12px;
+    color: var(--color-fg-muted);
+  }
+  .q-body {
+    display: flex;
+    gap: 10px;
+    margin-top: 4px;
+    min-width: 0;
+  }
+  .q-text {
+    margin: 0;
+    flex: 1 1 auto;
+    font-size: 13.5px;
+    line-height: 1.45;
+    color: var(--color-fg);
+    white-space: pre-wrap;
+    word-break: break-word;
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .q-thumb {
+    flex: 0 0 auto;
+    position: relative;
+    width: 72px;
+    height: 72px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: var(--color-border);
+    display: block;
+  }
+  .q-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .q-play {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    color: #fff;
+    font-size: 22px;
+    text-shadow: 0 0 6px rgba(0, 0, 0, 0.6);
+    pointer-events: none;
+  }
+  .q-more {
+    position: absolute;
+    right: 4px;
+    bottom: 4px;
+    background: rgba(0, 0, 0, 0.65);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 999px;
+  }
+</style>

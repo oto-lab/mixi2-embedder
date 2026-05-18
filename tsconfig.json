@@ -1,0 +1,18 @@
+{
+  "extends": ["astro/tsconfigs/strict", "@tsconfig/strictest/tsconfig.json"],
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist", ".vercel", "node_modules"],
+  "compilerOptions": {
+    "verbatimModuleSyntax": false,
+    "isolatedModules": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext",
+    "target": "ES2022",
+    "jsx": "preserve",
+    "allowImportingTsExtensions": false,
+    "noUncheckedIndexedAccess": true,
+    "paths": {
+      "~/*": ["./src/*"]
+    }
+  }
+}

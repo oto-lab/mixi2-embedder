@@ -1,0 +1,233 @@
+---
+import { PostMediaType } from 'mixi2-js';
+import Snippet from '~/components/Snippet.astro';
+import SnippetFallback from '~/components/SnippetFallback.astro';
+import { fetchPost, fetchUser } from '~/lib/mixi2';
+import { postUrl as buildPostUrl } from '~/lib/parse';
+
+interface Props {
+  postId: string | null;
+}
+
+const { postId } = Astro.props;
+
+const result = postId
+  ? await fetchPost(postId)
+  : ({ ok: false, reason: 'not_found' } as const);
+
+const user =
+  result.ok && result.post.creatorId
+    ? await fetchUser(result.post.creatorId)
+    : null;
+
+if (result.ok) {
+  Astro.response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=300, stale-while-revalidate=86400'
+  );
+} else if (result.reason === 'error') {
+  Astro.response.status = 502;
+  Astro.response.headers.set('Cache-Control', 'no-store');
+} else {
+  Astro.response.status = 404;
+  Astro.response.headers.set(
+    'Cache-Control',
+    'public, s-maxage=60, stale-while-revalidate=300'
+  );
+}
+
+// --- OGP / Twitter Card metadata for Discord/Slack/X/Telegram previews -----
+const ogSiteName = 'mixi2';
+const ogThemeColor = '#ff5a36';
+let ogTitle = 'mixi2 post';
+let ogDescription = '';
+let ogImage: string | null = null;
+let ogImageWidth: number | null = null;
+let ogImageHeight: number | null = null;
+let ogCanonical = postId
+  ? `https://mixi.social/posts/${postId}`
+  : 'https://mixi.social/';
+let ogVideoUrl: string | null = null;
+let ogVideoMime: string | null = null;
+let ogVideoWidth: number | null = null;
+let ogVideoHeight: number | null = null;
+
+if (result.ok) {
+  const post = result.post;
+  const displayName = user?.displayName || user?.name || 'mixi2 user';
+  const handle = user?.name ? ` (@${user.name})` : '';
+  ogTitle = `${displayName}${handle} on mixi2`;
+  ogDescription = post.text.trim();
+  ogCanonical = buildPostUrl(post.postId, user?.name);
+
+  const firstImageMedia = post.postMediaList.find(
+    (m) => m.mediaType === PostMediaType.IMAGE && m.image
+  );
+  const firstVideoMedia = post.postMediaList.find(
+    (m) => m.mediaType === PostMediaType.VIDEO && m.video
+  );
+
+  if (firstImageMedia?.image) {
+    const img = firstImageMedia.image;
+    ogImage = img.largeImageUrl || img.smallImageUrl;
+    ogImageWidth = img.largeImageWidth || img.smallImageWidth || null;
+    ogImageHeight = img.largeImageHeight || img.smallImageHeight || null;
+  } else if (firstVideoMedia?.video) {
+    const v = firstVideoMedia.video;
+    ogImage = v.previewImageUrl;
+    ogImageWidth = v.previewImageWidth || null;
+    ogImageHeight = v.previewImageHeight || null;
+    if (v.videoUrl) {
+      ogVideoUrl = v.videoUrl;
+      ogVideoMime = v.videoMimeType || 'video/mp4';
+      ogVideoWidth = v.videoWidth || null;
+      ogVideoHeight = v.videoHeight || null;
+    }
+  } else if (user?.userAvatar?.largeImageUrl) {
+    const av = user.userAvatar;
+    ogImage = av.largeImageUrl;
+    ogImageWidth = av.largeImageWidth || null;
+    ogImageHeight = av.largeImageHeight || null;
+  }
+}
+
+const ogTitleClamped =
+  ogTitle.length > 70 ? ogTitle.slice(0, 70) + '…' : ogTitle;
+const ogDescriptionClamped =
+  ogDescription.length > 280
+    ? ogDescription.slice(0, 280) + '…'
+    : ogDescription;
+const twitterCard = ogImage ? 'summary_large_image' : 'summary';
+---
+
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>{ogTitleClamped}</title>
+    {
+      ogDescriptionClamped && (
+        <meta name="description" content={ogDescriptionClamped} />
+      )
+    }
+    <link rel="canonical" href={ogCanonical} />
+
+    <meta property="og:type" content="article" />
+    <meta property="og:site_name" content={ogSiteName} />
+    <meta property="og:title" content={ogTitleClamped} />
+    {
+      ogDescriptionClamped && (
+        <meta property="og:description" content={ogDescriptionClamped} />
+      )
+    }
+    <meta property="og:url" content={ogCanonical} />
+    {ogImage && <meta property="og:image" content={ogImage} />}
+    {
+      ogImage && ogImageWidth && (
+        <meta property="og:image:width" content={String(ogImageWidth)} />
+      )
+    }
+    {
+      ogImage && ogImageHeight && (
+        <meta property="og:image:height" content={String(ogImageHeight)} />
+      )
+    }
+    {
+      ogVideoUrl && (
+        <Fragment>
+          <meta property="og:video" content={ogVideoUrl} />
+          <meta property="og:video:url" content={ogVideoUrl} />
+          <meta property="og:video:secure_url" content={ogVideoUrl} />
+          {ogVideoMime && (
+            <meta property="og:video:type" content={ogVideoMime} />
+          )}
+          {ogVideoWidth && (
+            <meta property="og:video:width" content={String(ogVideoWidth)} />
+          )}
+          {ogVideoHeight && (
+            <meta property="og:video:height" content={String(ogVideoHeight)} />
+          )}
+        </Fragment>
+      )
+    }
+
+    <meta name="twitter:card" content={twitterCard} />
+    <meta name="twitter:title" content={ogTitleClamped} />
+    {
+      ogDescriptionClamped && (
+        <meta name="twitter:description" content={ogDescriptionClamped} />
+      )
+    }
+    {ogImage && <meta name="twitter:image" content={ogImage} />}
+    {user?.name && <meta name="twitter:creator" content={`@${user.name}`} />}
+
+    <meta name="theme-color" content={ogThemeColor} />
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        color-scheme: light dark;
+      }
+      body {
+        font-family:
+          -apple-system,
+          BlinkMacSystemFont,
+          'Hiragino Sans',
+          'Yu Gothic UI',
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+      }
+      #root {
+        padding: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      {
+        result.ok ? (
+          <Snippet post={result.post} user={user} />
+        ) : (
+          <SnippetFallback
+            postId={postId ?? ''}
+            reason={result.reason}
+            message={result.reason === 'error' ? result.message : undefined}
+          />
+        )
+      }
+    </div>
+
+    <script is:inline>
+      (function () {
+        function postHeight() {
+          var h = document.documentElement.scrollHeight;
+          try {
+            window.parent.postMessage(
+              { type: 'mixi2-embedder-snippet-height', height: h },
+              '*'
+            );
+          } catch (_) {}
+        }
+        postHeight();
+        if (document.readyState !== 'complete') {
+          window.addEventListener('load', postHeight, { once: true });
+        }
+        if (typeof ResizeObserver !== 'undefined') {
+          new ResizeObserver(postHeight).observe(document.documentElement);
+        } else {
+          window.addEventListener('resize', postHeight);
+        }
+        document.addEventListener('readystatechange', postHeight);
+        var imgs = document.images;
+        for (var i = 0; i < imgs.length; i++) {
+          if (!imgs[i].complete) imgs[i].addEventListener('load', postHeight);
+        }
+      })();
+    </script>
+  </body>
+</html>

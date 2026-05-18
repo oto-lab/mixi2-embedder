@@ -1,0 +1,397 @@
+---
+import type { Post, User } from 'mixi2-js';
+import PostText from './PostText.astro';
+import PostMedia from './PostMedia.astro';
+import OgpCard from './OgpCard.astro';
+import QuotedPost from './QuotedPost.astro';
+import {
+  postUrl as buildPostUrl,
+  userUrl,
+  isMixi2PostUrl,
+  extractMixi2PostRefs,
+} from '~/lib/parse';
+import { formatTimestamp, isoTimestamp } from '~/lib/text';
+import { extractUrls, fetchOgp, type OgpData } from '~/lib/ogp';
+import { fetchPosts, fetchUsers } from '~/lib/mixi2';
+import { fetchQuotedPostId } from '~/lib/mixi2-web';
+import brandLogo from '~/assets/mixi2_Symbol_FullColor.png';
+
+interface Props {
+  post: Post;
+  user: User | null;
+}
+
+const { post, user } = Astro.props;
+
+const displayName = user?.displayName || user?.name || 'mixi2 user';
+const handle = user?.name ? `@${user.name}` : '';
+const avatarUrl = user?.userAvatar?.smallImageUrl ?? null;
+const profileHref = user?.name ? userUrl(user.name) : `https://mixi.social`;
+const linkHref = buildPostUrl(post.postId, user?.name);
+const showText = post.text.trim().length > 0;
+const brandLogoUrl = new URL(brandLogo.src, Astro.url).href;
+
+// --- Quoted posts ----------------------------------------------------------
+// 1. mixi2 post URLs in text (always works, but quote-posts created via
+//    mixi2 Web don't usually include a URL)
+// 2. mixi.social server-rendered HTML scrape for the official `quotePostId`
+//    field (the public API doesn't expose it — see lib/mixi2-web.ts)
+const scrapedQuoteIdPromise = fetchQuotedPostId(post.postId);
+const textRefs = extractMixi2PostRefs(post.text, 4).filter(
+  (r) => r.id !== post.postId
+);
+const scrapedQuoteId = await scrapedQuoteIdPromise;
+
+const orderedQuoteRefs: { id: string; url: string | null }[] = [];
+const seenQuoteIds = new Set<string>();
+if (scrapedQuoteId && scrapedQuoteId !== post.postId) {
+  orderedQuoteRefs.push({ id: scrapedQuoteId, url: null });
+  seenQuoteIds.add(scrapedQuoteId);
+}
+for (const r of textRefs) {
+  if (seenQuoteIds.has(r.id)) continue;
+  seenQuoteIds.add(r.id);
+  orderedQuoteRefs.push({ id: r.id, url: r.url });
+  if (orderedQuoteRefs.length >= 4) break;
+}
+
+const quotedPostsMap = orderedQuoteRefs.length
+  ? await fetchPosts(orderedQuoteRefs.map((r) => r.id))
+  : new Map();
+const quotedCreatorIds = [...quotedPostsMap.values()].map((p) => p.creatorId);
+const quotedUsers = quotedCreatorIds.length
+  ? await fetchUsers(quotedCreatorIds)
+  : new Map();
+const quotes = orderedQuoteRefs
+  .map((r) => {
+    const qp = quotedPostsMap.get(r.id);
+    if (!qp) return null;
+    return {
+      url: r.url,
+      post: qp,
+      user: quotedUsers.get(qp.creatorId) ?? null,
+    };
+  })
+  .filter(
+    (x): x is { url: string | null; post: Post; user: User | null } =>
+      x !== null
+  );
+// URLs to hide from the body text rendering (only those that came from text)
+const quotedUrls = quotes
+  .map((q) => q.url)
+  .filter((u): u is string => u !== null);
+
+// --- Reply: fetch parent post creator to show "Replying to @user" ----------
+let replyToUser: User | null = null;
+let replyToHandleFallback: string | null = null;
+if (post.inReplyToPostId) {
+  const parents = await fetchPosts([post.inReplyToPostId]);
+  const parent = parents.get(post.inReplyToPostId);
+  if (parent) {
+    const users = await fetchUsers([parent.creatorId]);
+    replyToUser = users.get(parent.creatorId) ?? null;
+  }
+  if (!replyToUser) replyToHandleFallback = 'user';
+}
+
+// --- OGP: exclude mixi2 post URLs (those are quote cards) ------------------
+const ogpUrls = extractUrls(post.text, 10)
+  .filter((u) => !isMixi2PostUrl(u))
+  .slice(0, 4);
+const ogpResults = await Promise.all(ogpUrls.map((u) => fetchOgp(u)));
+const ogps: OgpData[] = ogpResults.filter((x): x is OgpData => x !== null);
+---
+
+<article class="card">
+  {
+    (replyToUser || replyToHandleFallback) && (
+      <div class="reply-header">
+        <svg
+          class="reply-icon"
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          aria-hidden="true"
+        >
+          <path
+            d="M10 9V5l-7 7 7 7v-4.1c5 0 8.5 1.6 11 5.1-1-5-4-10-11-11z"
+            fill="currentColor"
+          />
+        </svg>
+        <span>
+          返信先:{' '}
+          {replyToUser ? (
+            <a
+              href={userUrl(replyToUser.name)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              @{replyToUser.name}
+            </a>
+          ) : (
+            <span>削除済みのポスト</span>
+          )}
+        </span>
+      </div>
+    )
+  }
+  <header class="head">
+    <a
+      class="avatar"
+      href={profileHref}
+      target="_blank"
+      rel="noopener noreferrer"
+    >
+      {
+        avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            width={user?.userAvatar?.smallImageWidth ?? 48}
+            height={user?.userAvatar?.smallImageHeight ?? 48}
+            loading="lazy"
+            decoding="async"
+          />
+        ) : (
+          <span class="avatar-placeholder" aria-hidden="true">
+            {displayName.slice(0, 1)}
+          </span>
+        )
+      }
+    </a>
+    <div class="meta">
+      <a
+        class="name"
+        href={profileHref}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <span class="display-name">{displayName}</span>
+        {handle && <span class="handle">{handle}</span>}
+      </a>
+    </div>
+    <a
+      class="brand"
+      href={linkHref}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label="mixi2 で開く"
+    >
+      <img
+        class="brand-img"
+        src={brandLogoUrl}
+        alt="mixi2"
+        width="38"
+        height="28"
+        decoding="async"
+        loading="eager"
+      />
+    </a>
+  </header>
+
+  {
+    showText && (
+      <div class="body">
+        <PostText text={post.text} excludeUrls={quotedUrls} />
+      </div>
+    )
+  }
+
+  {
+    post.postMediaList.length > 0 && (
+      <PostMedia mediaList={post.postMediaList} postUrl={linkHref} />
+    )
+  }
+
+  {
+    quotes.length > 0 && (
+      <div class="quote-list">
+        {quotes.map((q) => (
+          <QuotedPost post={q.post} user={q.user} />
+        ))}
+      </div>
+    )
+  }
+
+  {
+    ogps.length > 0 && (
+      <div class="ogp-list">
+        {ogps.map((o) => (
+          <OgpCard data={o} />
+        ))}
+      </div>
+    )
+  }
+
+  <footer class="foot">
+    <a class="time" href={linkHref} target="_blank" rel="noopener noreferrer">
+      {
+        post.createdAt && (
+          <time datetime={isoTimestamp(post.createdAt)}>
+            {formatTimestamp(post.createdAt)}
+          </time>
+        )
+      }
+      <span class="dot">·</span>
+      <span>mixi2 で見る</span>
+    </a>
+  </footer>
+</article>
+
+<style>
+  .card {
+    --color-fg: #1a1a1a;
+    --color-fg-muted: #6b6f76;
+    --color-border: #e6e8eb;
+    --color-bg: #ffffff;
+    --color-accent: #ff5a36;
+    --radius: 24px;
+
+    display: block;
+    background: var(--color-bg);
+    color: var(--color-fg);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    padding: 16px 18px 14px;
+    font-family:
+      -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Yu Gothic UI',
+      'Segoe UI', Roboto, sans-serif;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 550px;
+  }
+  @media (prefers-color-scheme: dark) {
+    .card {
+      --color-fg: #f1f3f5;
+      --color-fg-muted: #9aa1a9;
+      --color-border: #2a2d31;
+      --color-bg: #15171a;
+    }
+  }
+
+  .head {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .avatar {
+    flex: 0 0 auto;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--color-border);
+    display: block;
+  }
+  .avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    place-items: center;
+    color: var(--color-fg-muted);
+    font-weight: 600;
+  }
+  .meta {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .name {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    line-height: 1.2;
+  }
+  .display-name {
+    font-weight: 700;
+    color: var(--color-fg);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .handle {
+    font-size: 13px;
+    color: var(--color-fg-muted);
+    margin-top: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .name:hover .display-name {
+    text-decoration: underline;
+  }
+  .brand {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.9;
+  }
+  .brand:hover {
+    opacity: 1;
+  }
+  .brand-img {
+    height: 28px;
+    width: 38px;
+    object-fit: contain;
+    display: block;
+  }
+
+  .reply-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--color-fg-muted);
+    margin-bottom: 8px;
+  }
+  .reply-header a {
+    color: var(--color-fg-muted);
+    text-decoration: none;
+  }
+  .reply-header a:hover {
+    color: var(--color-accent);
+    text-decoration: underline;
+  }
+  .reply-icon {
+    flex: 0 0 auto;
+    opacity: 0.7;
+  }
+
+  .body {
+    margin-top: 10px;
+  }
+
+  .quote-list,
+  .ogp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .foot {
+    margin-top: 12px;
+    font-size: 13px;
+    color: var(--color-fg-muted);
+  }
+  .time {
+    color: inherit;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .time:hover {
+    color: var(--color-accent);
+  }
+  .dot {
+    opacity: 0.7;
+  }
+</style>
