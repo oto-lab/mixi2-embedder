@@ -54,6 +54,8 @@
 
   onMount(() => {
     origin = window.location.origin;
+    const urlParam = new URLSearchParams(window.location.search).get('url');
+    if (urlParam) input = urlParam;
     const onMessage = (event: MessageEvent) => {
       const data = event.data as { type?: string; height?: number } | null;
       if (

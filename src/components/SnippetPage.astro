@@ -9,9 +9,10 @@ import { postUrl as buildPostUrl, extractMixi2PostRefs } from '~/lib/parse';
 
 interface Props {
   postId: string | null;
+  redirectToRoot?: boolean;
 }
 
-const { postId } = Astro.props;
+const { postId, redirectToRoot = false } = Astro.props;
 
 const result = postId
   ? await fetchPost(postId)
@@ -162,6 +163,13 @@ if (result.ok) {
   }
 }
 
+// When opened by a human browser (share URL), redirect to root with pre-filled input.
+// OGP scrapers don't execute JS so they still see the meta tags above.
+const redirectUrl =
+  redirectToRoot && result.ok
+    ? `/?url=${encodeURIComponent(ogCanonical)}`
+    : null;
+
 const ogTitleClamped =
   ogTitle.length > 70 ? ogTitle.slice(0, 70) + '…' : ogTitle;
 const ogDescriptionClamped =
@@ -238,6 +246,13 @@ const primaryImage = ogImages[0] ?? null;
     {user?.name && <meta name="twitter:creator" content={`@${user.name}`} />}
 
     <meta name="theme-color" content={ogThemeColor} />
+    {
+      redirectUrl && (
+        <script is:inline define:vars={{ redirectUrl }}>
+          window.location.replace(redirectUrl);
+        </script>
+      )
+    }
     <style>
       html,
       body {

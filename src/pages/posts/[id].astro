@@ -8,4 +8,4 @@ const postId = parsePostId(Astro.params['id'] ?? '');
 if (!postId) Astro.response.status = 404;
 ---
 
-<SnippetPage postId={postId} />
+<SnippetPage postId={postId} redirectToRoot={true} />
