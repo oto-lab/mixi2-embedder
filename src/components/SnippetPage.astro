@@ -18,6 +18,8 @@ const result = postId
   ? await fetchPost(postId)
   : ({ ok: false, reason: 'not_found' } as const);
 
+Astro.response.headers.set('Content-Type', 'text/html; charset=utf-8');
+
 if (result.ok) {
   Astro.response.headers.set(
     'Cache-Control',
@@ -202,7 +204,7 @@ const primaryImage = ogImages[0] ?? null;
         <meta property="og:description" content={ogDescriptionClamped} />
       )
     }
-    <meta property="og:url" content={ogCanonical} />
+    <meta property="og:url" content={Astro.url.href} />
     {
       ogImages.map((img) => (
         <Fragment>

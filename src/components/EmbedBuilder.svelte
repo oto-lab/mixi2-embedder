@@ -60,10 +60,6 @@
   const shareUrl = $derived(
     postId && origin ? buildShareUrl(origin, postId, effectiveHandle) : ''
   );
-  const builderUrl = $derived(
-    postId && origin ? `${origin}/?url=${encodeURIComponent(canonicalInputUrl)}` : ''
-  );
-
   onMount(() => {
     origin = window.location.origin;
     const urlParam = new URLSearchParams(window.location.search).get('url');
@@ -248,17 +244,9 @@
   {/if}
 
   {#if origin}
-    <div class="host-row">
-      <span class="host-label">このツールをシェア</span>
-      <code class="oneline host-url">{origin}</code>
-      <button
-        class="copy"
-        type="button"
-        onclick={() => copy(origin, 'host')}
-      >
-        {copied === 'host' ? 'コピーしました' : 'コピー'}
-      </button>
-    </div>
+    <button class="share-tool" type="button" onclick={() => copy(origin, 'host')}>
+      {copied === 'host' ? 'コピーしました' : 'このツールをシェア'}
+    </button>
   {/if}
 </section>
 
@@ -470,21 +458,20 @@
     white-space: pre-wrap;
     word-break: break-all;
   }
-  .host-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .host-label {
+  .share-tool {
+    align-self: flex-start;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--fg-muted);
+    border-radius: 999px;
+    padding: 6px 16px;
     font-size: 13px;
     font-weight: 600;
-    color: var(--fg-muted);
-    white-space: nowrap;
+    cursor: pointer;
   }
-  .host-url {
-    flex: 1;
-    min-width: 0;
+  .share-tool:hover {
+    border-color: var(--accent);
+    color: var(--accent);
   }
   .oneline {
     display: block;
