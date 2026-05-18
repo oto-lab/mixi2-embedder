@@ -14,7 +14,6 @@ import { formatTimestamp, isoTimestamp } from '~/lib/text';
 import { extractUrls, fetchOgp, type OgpData } from '~/lib/ogp';
 import { fetchPosts, fetchUsers } from '~/lib/mixi2';
 import { fetchQuotedPostId } from '~/lib/mixi2-web';
-import brandLogo from '~/assets/mixi2_Symbol_FullColor.png';
 
 interface Props {
   post: Post;
@@ -29,7 +28,6 @@ const avatarUrl = user?.userAvatar?.smallImageUrl ?? null;
 const profileHref = user?.name ? userUrl(user.name) : `https://mixi.social`;
 const linkHref = buildPostUrl(post.postId, user?.name);
 const showText = post.text.trim().length > 0;
-const brandLogoUrl = new URL(brandLogo.src, Astro.url).href;
 
 // --- Quoted posts ----------------------------------------------------------
 // 1. mixi2 post URLs in text (always works, but quote-posts created via
@@ -179,7 +177,7 @@ const ogps: OgpData[] = ogpResults.filter((x): x is OgpData => x !== null);
     >
       <img
         class="brand-img"
-        src={brandLogoUrl}
+        src="/mixi2_Symbol_FullColor.png"
         alt="mixi2"
         width="38"
         height="28"
