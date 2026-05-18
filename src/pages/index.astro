@@ -165,10 +165,21 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
         flex-direction: column;
         gap: 36px;
       }
+      @media (max-width: 600px) {
+        .page {
+          padding: 24px 16px 56px;
+          gap: 24px;
+        }
+      }
       .hero h1 {
         margin: 0 0 8px;
         font-size: 28px;
         letter-spacing: -0.01em;
+      }
+      @media (max-width: 600px) {
+        .hero h1 {
+          font-size: 22px;
+        }
       }
       .title-link {
         display: inline-flex;
@@ -230,10 +241,15 @@ const exampleBlockquote = `<blockquote class="mixi2-embedder-embed" data-mixi2-e
         overflow-x: auto;
         font-size: 12.5px;
         line-height: 1.55;
+        white-space: pre-wrap;
+        word-break: break-all;
       }
       .docs pre code {
         background: transparent;
         padding: 0;
+      }
+      .repo a {
+        word-break: break-all;
       }
       .foot {
         text-align: center;

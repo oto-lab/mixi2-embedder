@@ -162,6 +162,19 @@
       </div>
 
       <div class="panel">
+        <label class="user-toggle" title={handle ? '' : 'URL にユーザー名が含まれていません'}>
+          <input
+            type="checkbox"
+            bind:checked={includeUser}
+            disabled={!handle}
+          />
+          <span>
+            URL に <code>@{handle ?? 'user'}</code> を含める
+            {#if !handle}
+              <span class="user-toggle-hint">(URL から取得できません)</span>
+            {/if}
+          </span>
+        </label>
         <div class="panel-head">
           <h2>埋め込みコード</h2>
           <div class="head-actions">
@@ -196,19 +209,6 @@
             </button>
           </div>
         </div>
-        <label class="user-toggle" title={handle ? '' : 'URL にユーザー名が含まれていません'}>
-          <input
-            type="checkbox"
-            bind:checked={includeUser}
-            disabled={!handle}
-          />
-          <span>
-            URL に <code>@{handle ?? 'user'}</code> を含める
-            {#if !handle}
-              <span class="user-toggle-hint">(URL から取得できません)</span>
-            {/if}
-          </span>
-        </label>
         <pre class="snippet"><code>{embedCode}</code></pre>
 
         <div class="panel-head sub">
@@ -272,8 +272,8 @@
   }
   input[type='url'] {
     flex: 1;
-    padding: 12px 40px 12px 14px;
-    font-size: 15px;
+    padding: 12px 44px 12px 14px;
+    font-size: 16px;
     border-radius: 12px;
     border: 1px solid var(--border);
     background: var(--surface);
@@ -286,11 +286,11 @@
   }
   .clear {
     position: absolute;
-    right: 6px;
+    right: 4px;
     top: 50%;
     transform: translateY(-50%);
-    width: 28px;
-    height: 28px;
+    width: 40px;
+    height: 40px;
     border: 0;
     border-radius: 50%;
     background: transparent;
@@ -298,6 +298,7 @@
     font-size: 18px;
     line-height: 1;
     cursor: pointer;
+    touch-action: manipulation;
   }
   .clear:hover {
     background: var(--border);
@@ -366,9 +367,11 @@
     color: var(--fg-muted);
     font-size: 12px;
     font-weight: 600;
-    padding: 4px 10px;
+    padding: 6px 12px;
     border-radius: 999px;
     cursor: pointer;
+    touch-action: manipulation;
+    min-height: 36px;
   }
   .toggle-btn.active {
     background: var(--surface);
@@ -383,10 +386,13 @@
     background: var(--surface-alt);
     color: var(--fg);
     border-radius: 999px;
-    padding: 4px 12px;
-    font-size: 12px;
+    padding: 7px 14px;
+    font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    min-height: 36px;
+    white-space: nowrap;
   }
   .copy:hover {
     border-color: var(--accent);
@@ -396,16 +402,17 @@
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 6px 10px;
-    margin: -2px 0 0;
+    padding: 8px 12px;
     border: 1px solid var(--border);
     border-radius: 10px;
     background: var(--surface-alt);
-    font-size: 12.5px;
+    font-size: 13px;
     color: var(--fg);
     cursor: pointer;
     align-self: flex-start;
     user-select: none;
+    touch-action: manipulation;
+    min-height: 36px;
   }
   .user-toggle:has(input:disabled) {
     cursor: not-allowed;
@@ -464,10 +471,12 @@
     background: var(--surface-alt);
     color: var(--fg-muted);
     border-radius: 999px;
-    padding: 6px 16px;
+    padding: 8px 18px;
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
+    touch-action: manipulation;
+    min-height: 40px;
   }
   .share-tool:hover {
     border-color: var(--accent);
