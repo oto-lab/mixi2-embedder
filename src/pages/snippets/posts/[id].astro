@@ -1,0 +1,11 @@
+---
+import SnippetPage from '~/components/SnippetPage.astro';
+import { parsePostId } from '~/lib/parse';
+
+export const prerender = false;
+
+const postId = parsePostId(Astro.params['id'] ?? '');
+if (!postId) Astro.response.status = 404;
+---
+
+<SnippetPage postId={postId} />

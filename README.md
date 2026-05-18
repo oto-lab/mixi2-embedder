@@ -30,13 +30,20 @@ mixi2 のポストをブログや任意の Web ページに埋め込めるスニ
 | パス | 役割 |
 | --- | --- |
 | `/` | URL 貼り付け → プレビュー → コピー UI |
-| `/snippets/{post-id}` | iframe で表示される SSR のポストカード（embed.js から呼ばれる） |
-| `/posts/{post-id}` | シェア用ページ（OGP 付き）。`/snippets/{id}` と同じ内容 |
-| `/@{user}/posts/{post-id}` | シェア用ページ（推奨）。`@` 無しの `/{user}/posts/{id}` でも可 |
 | `/embed.js` | 埋め込み先ページに貼るローダースクリプト |
 | `/api/debug/{post-id}` | デバッグ用 JSON（リプライ/引用判定の確認用） |
 
-`/posts/...` / `/@user/posts/...` / `/user/posts/...` はすべて同じ SSR ハンドラに繋がっており、Discord などにペーストするとサイト側で生成された OGP メタを読んでリッチプレビューを表示します。
+ポスト本体は以下のすべての形式で同じ SSR ハンドラ ([SnippetPage.astro](src/components/SnippetPage.astro)) に繋がります。`@` の有無、ユーザー部分の有無、`/snippets/` プレフィックスの有無いずれにも対応。Discord などにペーストするとサイト側で生成された OGP メタを読んでリッチプレビューを表示します。
+
+| パス | 用途 |
+| --- | --- |
+| `/snippets/{id}` | iframe canonical (`embed.js` から呼ばれる) |
+| `/snippets/posts/{id}` | `/snippets/` 配下 / ユーザー名省略形 |
+| `/snippets/@{user}/posts/{id}` | `/snippets/` 配下 / `@` あり |
+| `/snippets/{user}/posts/{id}` | `/snippets/` 配下 / `@` なし |
+| `/posts/{id}` | 短縮シェア URL / ユーザー名省略形 |
+| `/@{user}/posts/{id}` | 短縮シェア URL / `@` あり（推奨） |
+| `/{user}/posts/{id}` | 短縮シェア URL / `@` なし |
 
 ---
 
@@ -169,12 +176,15 @@ src/
     SnippetFallback.astro        # 404/削除/エラー用フォールバック
     EmbedBuilder.svelte          # ルートページのインタラクティブ UI（Svelte island）
   pages/
-    index.astro                  # ルートページ
-    snippets/[id].astro          # iframe 用カノニカル URL
-    posts/[id].astro             # シェア用 URL（ユーザー指定なし）
-    @[user]/posts/[id].astro     # シェア用 URL（@ あり）
-    [user]/posts/[id].astro      # シェア用 URL（@ なし）
-    api/debug/[id].ts            # 開発用デバッグ JSON
+    index.astro                          # ルートページ
+    snippets/[id].astro                  # iframe canonical
+    snippets/posts/[id].astro            # iframe canonical / ユーザー省略形
+    snippets/@[user]/posts/[id].astro    # iframe canonical / @ あり
+    snippets/[user]/posts/[id].astro     # iframe canonical / @ なし
+    posts/[id].astro                     # 短縮シェア URL / ユーザー指定なし
+    @[user]/posts/[id].astro             # 短縮シェア URL / @ あり
+    [user]/posts/[id].astro              # 短縮シェア URL / @ なし
+    api/debug/[id].ts                    # 開発用デバッグ JSON
 ```
 
 ### スタック

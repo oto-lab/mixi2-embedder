@@ -1,0 +1,16 @@
+---
+import SnippetPage from '~/components/SnippetPage.astro';
+import { parsePostId } from '~/lib/parse';
+
+export const prerender = false;
+
+// `posts` would be ambiguous with /snippets/posts/[id]; skip it here.
+const user = Astro.params['user'] ?? '';
+if (user === 'posts') {
+  return new Response('Not found', { status: 404 });
+}
+const postId = parsePostId(Astro.params['id'] ?? '');
+if (!postId) Astro.response.status = 404;
+---
+
+<SnippetPage postId={postId} />
