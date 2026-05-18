@@ -7,7 +7,7 @@
   } from '~/lib/parse';
 
   type Format = 'html' | 'mdx';
-  type CopiedKey = 'snippet' | 'script' | 'share' | null;
+  type CopiedKey = 'snippet' | 'script' | 'share' | 'builder' | null;
 
   let origin = $state('');
   let input = $state('');
@@ -44,12 +44,24 @@
 
   const embedCode = $derived(format === 'html' ? blockquoteHtml : mdxHtml);
 
+  // Always includes handle (regardless of includeUser toggle) — used for URL bar and ?url copy.
+  const canonicalInputUrl = $derived(
+    postId
+      ? handle
+        ? `https://mixi.social/@${handle}/posts/${postId}`
+        : `https://mixi.social/posts/${postId}`
+      : ''
+  );
+
   const iframeSrc = $derived(
     postId && origin ? `${origin}/snippets/${postId}` : ''
   );
   const scriptUrl = $derived(origin ? `${origin}/embed.js` : '');
   const shareUrl = $derived(
     postId && origin ? buildShareUrl(origin, postId, effectiveHandle) : ''
+  );
+  const builderUrl = $derived(
+    postId && origin ? `${origin}/?url=${encodeURIComponent(canonicalInputUrl)}` : ''
   );
 
   onMount(() => {
@@ -72,6 +84,15 @@
   $effect(() => {
     void iframeSrc;
     iframeHeight = 0;
+  });
+
+  $effect(() => {
+    if (!origin) return;
+    if (postId && canonicalInputUrl) {
+      window.history.replaceState(null, '', `/?url=${encodeURIComponent(canonicalInputUrl)}`);
+    } else if (window.location.search) {
+      window.history.replaceState(null, '', '/');
+    }
   });
 
   async function copy(text: string, which: CopiedKey) {
@@ -196,15 +217,27 @@
 
         <div class="panel-head sub">
           <h3>シェア用 URL (Discord / X / Slack 等)</h3>
+        </div>
+        <div class="url-row">
+          <code class="oneline">{shareUrl}</code>
           <button
             class="copy"
             type="button"
             onclick={() => copy(shareUrl, 'share')}
           >
-            {copied === 'share' ? 'コピーしました' : 'コピー'}
+            {copied === 'share' ? 'コピーしました' : '?なし'}
           </button>
         </div>
-        <code class="oneline">{shareUrl}</code>
+        <div class="url-row">
+          <code class="oneline">{builderUrl}</code>
+          <button
+            class="copy"
+            type="button"
+            onclick={() => copy(builderUrl, 'builder')}
+          >
+            {copied === 'builder' ? 'コピーしました' : '?あり'}
+          </button>
+        </div>
 
         <div class="panel-head sub">
           <h3>埋め込みスクリプト URL</h3>
@@ -434,6 +467,15 @@
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-all;
+  }
+  .url-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .url-row .oneline {
+    flex: 1;
+    min-width: 0;
   }
   .oneline {
     display: block;
